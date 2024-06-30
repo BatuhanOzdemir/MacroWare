@@ -1,0 +1,8 @@
+openpyxl
+xlsxwriter
+bs4
+requests
+time
+os.path
+pathlib
+subprocess
