@@ -49,29 +49,30 @@ def data_retrieve(workbook,text_file,file_num):#Dosyadaki linklere giderek metni
                     print("\nDevam Ediyor...\n")
      #Programı durduğumuzda veya bağlantıda hata olduğunda program o zamana kadarki ilerlemeyi kayıt edip kapanıyor
     except KeyboardInterrupt as e:
-        text_file.save("Kap_metni_"+file_num+".xlsx")
+        text_file.save(str(Path(Path.cwd(),"Text_Dosyaları"))+"\\"+"Kap_metni_"+file_num+".xlsx")
         text_file.close()
-        workbook.save("Kap_linkleri_"+file_num+".xlsx")
+        workbook.save(str(Path(Path.cwd(),"Kap Linkleri"))+"\\"+"Kap_linkleri_"+file_num+".xlsx")
         workbook.close()
         print("Program sonlandırıldı ve dosyalar kaydedildi.\n",e)
     except req.exceptions.ConnectionError as e:
         print("Bağlantı hatası\nProgram sonlanmadan dosyalar kaydedildi\n",e)
-        text_file.save("Kap_metni_" + file_num + ".xlsx")
+        text_file.save(str(Path(Path.cwd(), "Text_Dosyaları")) + "\\" + "Kap_metni_" + file_num + ".xlsx")
         text_file.close()
-        workbook.save("Kap_linkleri_" + file_num + ".xlsx")
+        workbook.save(str(Path(Path.cwd(), "Kap Linkleri")) + "\\" + "Kap_linkleri_" + file_num + ".xlsx")
         workbook.close()
 
 def main():
     file_num = input("Kaçıncı dosya ile çalışmak istiyorsun?:")
-    file = Path(Path.cwd(),"Kap_metni_"+file_num+".xlsx")
+    file = Path(Path.cwd(),"Text_Dosyaları","Kap_metni_"+file_num+".xlsx")
+    link_file = Path(Path.cwd(),"Kap Linkleri","Kap_linkleri_"+file_num+".xlsx")
     if os.path.isfile(file):
-        text_file = openpyxl.load_workbook("Kap_metni_"+file_num+".xlsx")
+        text_file = openpyxl.load_workbook(str(file))
     else:
-        text_file = xlsxwriter.workbook.Workbook("Kap_metni_"+file_num+".xlsx")# xlsxwriter ve openpyxl kütüphanelerinin farklı metodları var bu yüzden program ikinci kez çalıştığında hata veriyor
+        text_file = xlsxwriter.workbook.Workbook(str(file))# xlsxwriter ve openpyxl kütüphanelerinin farklı metodları var bu yüzden program ikinci kez çalıştığında hata veriyor
         text_file.close()
-        text_file = openpyxl.load_workbook("Kap_metni_"+file_num+".xlsx")# önlemek için eğer dosya yoksa xlsxwriter ile dosyayı oluşturup tekrar openpyxl ile açıyoruz
+        text_file = openpyxl.load_workbook(str(file))# önlemek için eğer dosya yoksa xlsxwriter ile dosyayı oluşturup tekrar openpyxl ile açıyoruz
     start = time.time()
-    workbook = openpyxl.load_workbook("Kap_linkleri_"+file_num+".xlsx")
+    workbook = openpyxl.load_workbook(str(link_file))
     end = time.time()
     interval = end - start
     print("\nDosya yüklendi.\nYüklenme " + str(interval) + " saniye sürdü.")
@@ -86,7 +87,7 @@ def install_requirements(filename):
     for requirement in requirements:
         requirement = requirement.strip()
         if requirement:
-            subprocess.call(['pip', 'install', requirement])
+            subprocess.call(['py','-m','pip', 'install', requirement])
 
 
 if __name__ == "__main__":
