@@ -61,6 +61,7 @@ def data_retrieve(workbook,text_file,file_num):#Dosyadaki linklere giderek metni
         workbook.save(str(Path(Path.cwd(), "Kap Linkleri")) + "\\" + "Kap_linkleri_" + file_num + ".xlsx")
         workbook.close()
 
+
 def main():
     file_num = input("Kaçıncı dosya ile çalışmak istiyorsun?:")
     file = Path(Path.cwd(),"Text_Dosyaları","Kap_metni_"+file_num+".xlsx")
