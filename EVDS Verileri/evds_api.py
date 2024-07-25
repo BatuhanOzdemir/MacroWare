@@ -6,7 +6,7 @@ from datetime import date
 import os
 
 
-evds = evdsAPI("xxxxxxxxx")
+evds = evdsAPI("xxxxxxxx")
 
 main_directory = Path(Path.cwd(),"EVDS_Excel_Dosyaları")
 if not os.path.exists(main_directory):
