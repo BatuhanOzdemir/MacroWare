@@ -9,6 +9,10 @@ import os
 evds = evdsAPI("8lqJtipjux")
 
 main_directory = Path(Path.cwd(),"EVDS_Excel_Dosyaları")
+if not os.path.exists(main_directory):
+	os.mkdir(Path.cwd(),"EVDS_Excel_Dosyaları")
+
+
 for category in evds.main_categories.iterrows():#start to iterate every main category
 	try:
 		os.chdir(main_directory)#make the cwd main directory
