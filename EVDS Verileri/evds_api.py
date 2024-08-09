@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from datetime import date
 import os
-
+import tqdm
 
 
 
@@ -15,23 +15,13 @@ def remove_illegal_characters(filename) -> str:
 	return allowed_filename
 
 
-def loading(iteration, total ,prefix="",suffix="",decimals=1,length=100,fill=">"):
-	percent = ('{0:.' + str(decimals) +'f}').format(100*(iteration/float(total)))
-	filledLength = int(length * iteration // total)
-	bar = fill * filledLength + "-" * (length - filledLength)
-	print(f"\r{prefix} |{bar}| {percent}% {suffix}", end="\r")
-	if iteration == total:
-		print()
-
-
 def get_macro_info(evds,main_directory) -> None:
-	current_iteration = 0 #To count iteration of the progress bar
-	iter_sub_group = 0
-	iter_serie = 0
-	print("\n\nProgress on the main categories\n")
+
+	print("\n\nProgress on the data collection\n")
 	print("\nBeware the process is quite long!\n\n")
-	loading(current_iteration, evds.main_categories.shape[0], prefix="Main Category", suffix="Complete\n", length=50)
 	print("\n")
+
+	pbar_main = tqdm.tqdm(desc="Main Category",total=evds.main_categories.shape[0])#Progress bar
 	for category in evds.main_categories.iterrows():#start to iterate every main category
 		try:
 			os.chdir(main_directory)#make the cwd main directory
@@ -39,19 +29,17 @@ def get_macro_info(evds,main_directory) -> None:
 			if not os.path.exists(folder_main):
 				os.mkdir(folder_main)#Ana kategori adı ile cwd de bir klasör oluşturuyor
 			data_group_code = evds.get_sub_categories(category[0]+1).get("DATAGROUP_CODE")#gets the subcategory names for the main categories, though adding one leads to and error in folder stucture wrong data goes to wrong folder
-			iter_sub_group = 0
-			loading(current_iteration, data_group_code.shape[0], prefix="Sub-Category", suffix="Complete", length=50)
-			print("\n")
+
+			pbar_sub_category = tqdm.tqdm(desc="Sub-Category",total=data_group_code.shape[0],leave=True)#Progress bar
 			for serie in data_group_code:#iterate subcategories to get the series
 				os.chdir(folder_main)
 				folder_sub = Path(Path.cwd(),serie)#form the subfolder under the main category folder
 				if not os.path.exists(folder_sub):
 					os.mkdir(folder_sub)
-				iter_sub_group += 1
-				loading(iter_sub_group, data_group_code.shape[0], prefix="Sub-Category", suffix="Complete", length=50)
-				iter_serie = 0
-				loading(iter_serie, evds.get_series(serie).values.shape[0], prefix="Serie", suffix="Complete", length=50)
-				print("\n")
+				pbar_sub_category.update(1)
+
+
+				pbar_series = tqdm.tqdm(desc="Series",total=evds.get_series(serie).values.shape[0],leave=False)#Progress bar
 				for value in evds.get_series(serie).values:#iterate the series, value is of type tuple
 					serie_code = value[0]
 					start_date = value[2]
@@ -68,25 +56,28 @@ def get_macro_info(evds,main_directory) -> None:
 					os.chdir(folder_sub)
 					if not os.path.exists(file_name+".xlsx"):
 						df.to_excel(file_name+".xlsx")
-					iter_serie += 1
-					loading(iter_serie, evds.get_series(serie).values.shape[0], prefix="Serie", suffix="Complete", length=50)
+					pbar_series.update(1)#Progress bar
 
+				pbar_series.close()#Progress bar
+			pbar_sub_category.close()#Progress bar
+			pbar_main.update(1)#Progress bar
 		except Exception as e:#Have to handle Read timed out exception, although this is an exception it doesn't stop the program execution
 			print(e)
-		current_iteration += 1
-		loading(current_iteration, evds.main_categories.shape[0], prefix="Main Category", suffix="Complete", length=50)
 
 def install_requirements(filename) -> None:
+
 	with open(filename, 'r') as file:
 		requirements = file.readlines()
-	current_iteration = 0
-	loading(current_iteration, len(requirements), prefix="Progress", suffix="Complete", length=50)
+	pbar = tqdm.tqdm(desc="Progress",total=len(requirements))
+	iter_count = 0
 	for requirement in requirements:
 		requirement = requirement.strip()
 		if requirement:
 			subprocess.call(['py', '-m', 'pip', 'install', "-q","-q","-q", requirement])
-		current_iteration += 1
-		loading(current_iteration, len(requirements), prefix="Progress", suffix="Complete", length=50)
+		iter_count += 1
+		pbar.update(iter_count)
+
+
 
 def main(api_key) -> None:
 	evds = evdsAPI(api_key)
