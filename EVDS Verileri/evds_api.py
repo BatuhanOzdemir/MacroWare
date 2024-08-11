@@ -64,18 +64,16 @@ def get_macro_info(evds,main_directory) -> None:
 		except Exception as e:#Have to handle Read timed out exception, although this is an exception it doesn't stop the program execution
 			print(e)
 
-def install_requirements(filename) -> None:
 
+def install_requirements(filename) -> None:
 	with open(filename, 'r') as file:
 		requirements = file.readlines()
 	pbar = tqdm.tqdm(desc="Progress",total=len(requirements))
-	iter_count = 0
 	for requirement in requirements:
 		requirement = requirement.strip()
 		if requirement:
 			subprocess.call(['py', '-m', 'pip', 'install', "-q","-q","-q", requirement])
-		iter_count += 1
-		pbar.update(iter_count)
+		pbar.update(1)
 
 
 
