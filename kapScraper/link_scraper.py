@@ -7,13 +7,13 @@ import openpyxl
 import requests
 
 
-def get_latest_entry_number(file):#son bildirim sayısı
+def get_latest_entry_number(file) -> int:#son bildirim sayısı
 	wb = openpyxl.load_workbook(file)#file take really long to open!
 	ws = wb.active
 	return ws.max_row
 
 
-def get_son_bildirim_sayısı():
+def get_son_bildirim_sayısı() -> int:
 	file_path = Path(Path.cwd(), "Kap_linkleri_tüm", "Kap_linkleri.xlsx")
 	if os.path.exists(file_path):
 		return get_latest_entry_number(file_path)
@@ -32,7 +32,7 @@ sheet = 0
 #excel dosyasındaki her çalışma sayfası 65530 link alabiliyor, bu yüzden her 65530'uncu linkte yeni bir çalışma sayfası açılıyor
 
 
-def write_links(son_bildirim_sayısı, worksheet, workbook):
+def write_links(son_bildirim_sayısı, worksheet, workbook) -> None:
 	row = 0
 	column = 0
 	sheet_number = 0
@@ -76,7 +76,7 @@ def install_requirements(filename) -> None:
 		pbar.update(1)
 
 
-def link_check():#en son linkten başlayıp bütün linkleri kontrol etmek veya kırık olmayan ilk linkte durmak
+def link_check() -> None:#en son linkten başlayıp bütün linkleri kontrol etmek veya kırık olmayan ilk linkte durmak
 	filepath = Path(Path.cwd(),"Kap_linkleri_tüm","Kap_linkleri.xlsx")
 	excel_file = openpyxl.load_workbook(filepath)
 	active_sheet = excel_file.active
@@ -90,7 +90,7 @@ def link_check():#en son linkten başlayıp bütün linkleri kontrol etmek veya 
 		row_count += 1
 
 
-def remove(row):#removes the cell
+def remove(row) -> None:#removes the cell
 	filepath = Path(Path.cwd(), "Kap_linkleri_tüm", "Kap_linkleri.xlsx")
 	excel_file = openpyxl.load_workbook(filepath)
 	active_sheet = excel_file.active
@@ -102,7 +102,7 @@ def remove(row):#removes the cell
 
 
 
-def main(son_bildirim_sayısı):
+def main(son_bildirim_sayısı) -> None:
 	print("\n\t\t\t -----Link Scraper For KAP Declarations----\n")
 	print("\nProgram writes the links in an excel file to be read later\n")
 	print("\nDeclarations starts from 85084, which is harcoded in the Program\n")
