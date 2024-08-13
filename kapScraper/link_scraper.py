@@ -1,11 +1,25 @@
 import xlsxwriter
 import os
-import pathlib
+from pathlib import Path
 import subprocess
 import tqdm
 import openpyxl
+import requests
+
+
+def get_latest_entry_number(file):#son bildirim sayısı
+	wb = openpyxl.load_workbook(file)#file take really long to open!
+	ws = wb.active
+	return ws.max_row
+
+
+def get_son_bildirim_sayısı():
+	file_path = Path(Path.cwd(), "Kap_linkleri_tüm", "Kap_linkleri.xlsx")
+	if os.path.exists(file_path):
+		return get_latest_entry_number(file_path)
+
 #01.06.2024 itibariyle
-son_bildirim_sayısı = 1293434
+son_bildirim_sayısı =  get_son_bildirim_sayısı() #excel dosyasını açıp son rakamı okumak lazım
 ILK_BILDIRIM_SAYISI = 85084
 row = 0
 column = 0
@@ -61,6 +75,33 @@ def install_requirements(filename) -> None:
 			subprocess.call(['py', '-m', 'pip', 'install', "-q","-q","-q", requirement])
 		pbar.update(1)
 
+
+def link_check():#en son linkten başlayıp bütün linkleri kontrol etmek veya kırık olmayan ilk linkte durmak
+	filepath = Path(Path.cwd(),"Kap_linkleri_tüm","Kap_linkleri.xlsx")
+	excel_file = openpyxl.load_workbook(filepath)
+	active_sheet = excel_file.active
+	rows = list(active_sheet.iter_rows(min_row=1,max_row=active_sheet.max_row))
+	rows = reversed(rows)
+	row_count = 1
+	for row in rows:
+		status_code = requests.get(row)
+		if status_code != 200:
+			remove(row_count)
+		row_count += 1
+
+
+def remove(row):#removes the cell
+	filepath = Path(Path.cwd(), "Kap_linkleri_tüm", "Kap_linkleri.xlsx")
+	excel_file = openpyxl.load_workbook(filepath)
+	active_sheet = excel_file.active
+	for row in active_sheet:
+		for cell in row:
+			active_sheet.delete_rows(row[row],1)
+
+
+
+
+
 def main(son_bildirim_sayısı):
 	print("\n\t\t\t -----Link Scraper For KAP Declarations----\n")
 	print("\nProgram writes the links in an excel file to be read later\n")
@@ -74,14 +115,22 @@ def main(son_bildirim_sayısı):
 	print("\nLibraries installed.\n")
 	update_count = input("\nPlease enter the update count:")
 	son_bildirim_sayısı += int(update_count)
-	file_path = pathlib.Path(pathlib.Path.cwd(),"Kap_linkleri_tüm", "Kap_linkleri.xlsx")
-	folder = pathlib.Path(pathlib.Path.cwd(),"Kap_linkleri_tüm")
+	folder = Path(Path.cwd(),"Kap_linkleri_tüm")
 	os.chdir(folder)
-	workbook = xlsxwriter.workbook.Workbook("Kap_linkleri.xlsx")
+	workbook = xlsxwriter.workbook.Workbook("Kap_linkleri.xlsx")# dosyasının olup olamdığını kontrol etmek lazım openpyxl ile
 	worksheet = workbook.add_worksheet(str(0))
 	write_links(son_bildirim_sayısı,worksheet,workbook)
+	while True:
+		answer = input("\nDo you want to check the links?")
+		if answer.lower() in ["yes","y"]:
+			link_check()
+		if answer.lower() in ["no","n"]:
+			break
+		else:
+			print("\nInvalid input!")
 	print("\nClosing the xlsx file.")
 	workbook.close()
+
 
 if __name__ == "__main__":
 	main(son_bildirim_sayısı)
