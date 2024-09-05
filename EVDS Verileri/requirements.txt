@@ -1,2 +1,4 @@
 evds
 tqdm
+pymongo
+pandas
