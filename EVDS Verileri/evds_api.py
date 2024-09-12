@@ -82,6 +82,7 @@ def write_to_db(evds) -> None:
 
 
 
+
 def get_macro_info(evds,main_directory) -> None:
 
 	print("\n\nProgress on the data collection\n")
