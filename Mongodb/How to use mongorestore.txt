@@ -1,0 +1,160 @@
+# MongoDB `mongorestore` Tool Guide
+
+Our database name is Macroeconomics!
+
+This guide provides step-by-step instructions on how to use the `mongorestore` tool to restore data from MongoDB backup files.
+
+## Prerequisites
+
+- MongoDB and MongoDB Tools installed on your system.
+- Ensure that the `mongorestore` tool is available by adding MongoDB Tools to your system's environment path.
+- A MongoDB instance must be running on your system.
+
+---
+
+## Step 1: Verifying `mongorestore` Installation
+
+1. Open **Command Prompt** (press `Win + R`, type `cmd`, and press Enter).
+2. Run the following command to verify that the `mongorestore` tool is installed:
+   ```bash
+   mongorestore --version
+   ```
+   This should output the version of the `mongorestore` tool.
+
+---
+
+## Step 2: Backup File Structure
+
+`mongorestore` works with backups created using the `mongodump` tool, which generates:
+- A **directory** with a separate `.bson` file for each collection.
+- Optionally, `.json` or `.metadata.json` files with additional metadata.
+
+Ensure you have either:
+1. A directory containing multiple `.bson` files for different collections.
+2. A single `.bson` file representing the dump of a specific MongoDB collection or database.
+
+---
+
+## Step 3: Basic Usage
+
+The basic syntax for using the `mongorestore` tool is as follows:
+
+```bash
+mongorestore <options> <backup_directory_or_file>
+```
+
+### Example: Restoring a Full Database
+
+If you want to restore an entire database from a directory created by `mongodump`, use:
+
+```bash
+mongorestore --db <database_name> <path_to_dump_directory>
+```
+
+#### Example:
+```bash
+mongorestore --db myDatabase ./backup/myDatabase
+```
+
+### Example: Restoring a Specific Collection
+
+If you have a backup of only a specific collection and want to restore it, use:
+
+```bash
+mongorestore --db <database_name> --collection <collection_name> <path_to_collection_file.bson>
+```
+
+#### Example:
+```bash
+mongorestore --db myDatabase --collection myCollection ./backup/myDatabase/myCollection.bson
+```
+
+---
+
+## Step 4: Common Options
+
+- `--drop`: Before restoring the data, this option will drop the existing database or collection, if it exists.
+  
+  ```bash
+  mongorestore --drop --db myDatabase ./backup/myDatabase
+  ```
+
+- `--host`: Specify the MongoDB server address. By default, it connects to `localhost:27017`.
+
+  ```bash
+  mongorestore --host <hostname_or_ip_address> --db myDatabase ./backup/myDatabase
+  ```
+
+- `--port`: Specify the port of the MongoDB instance if it's not the default port (27017).
+
+  ```bash
+  mongorestore --port 28017 --db myDatabase ./backup/myDatabase
+  ```
+
+- `--gzip`: If the dump files are compressed, use this option to automatically decompress during restore.
+
+  ```bash
+  mongorestore --gzip --db myDatabase ./backup/myDatabase
+  ```
+
+- `--username` and `--password`: If authentication is required, provide the credentials.
+
+  ```bash
+  mongorestore --username myUser --password myPassword --db myDatabase ./backup/myDatabase
+  ```
+
+---
+
+## Step 5: Restoring Data with Authentication
+
+If your MongoDB instance requires authentication, you can use the following command:
+
+```bash
+mongorestore --host <hostname> --port <port> --username <username> --password <password> --authenticationDatabase <authDatabase> --db <database_name> <path_to_backup>
+```
+
+#### Example:
+```bash
+mongorestore --host localhost --port 27017 --username admin --password mypassword --authenticationDatabase admin --db myDatabase ./backup/myDatabase
+```
+
+---
+
+## Step 6: Restoring Data to a Different Database
+
+To restore the backup to a database with a different name, use the `--nsFrom` and `--nsTo` options:
+
+```bash
+mongorestore --nsFrom "<original_db>.*" --nsTo "<new_db>.*" <backup_directory>
+```
+
+#### Example:
+```bash
+mongorestore --nsFrom "oldDatabase.*" --nsTo "newDatabase.*" ./backup/oldDatabase
+```
+
+---
+
+## Step 7: Additional Help
+
+You can view the complete list of options for `mongorestore` by running:
+
+```bash
+mongorestore --help
+```
+
+---
+
+## Additional Resources
+
+- [MongoDB Documentation](https://www.mongodb.com/docs/)
+- [MongoDB Tools Documentation](https://www.mongodb.com/docs/database-tools/)
+
+---
+
+## Conclusion
+
+You now have a basic understanding of how to use the `mongorestore` tool to restore MongoDB data from backup files. For more advanced use cases, consult the official MongoDB documentation.
+```
+
+This `README.md` file covers the essential steps and options for using the `mongorestore` tool to restore MongoDB backups. It explains the basic usage, common options, and examples for different scenarios.
