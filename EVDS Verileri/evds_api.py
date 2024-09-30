@@ -31,51 +31,68 @@ def read_data(filter) -> list:
 
 
 def write_to_db(evds) -> None:
+	loop_counter = 0
+	#connecting to the database
 	client = pymongo.MongoClient("mongodb://localhost:27017/")#mongodb ile bağlantı kuruyor
 	db = client["Macroeconomics"]#çalışmak istediğin veritabanını seçiyorsun
 	collection = db["TCMB"]#burdaki collection SQL deki Table ile aynı şey, yani Table seçiyoruz
+
 	for category in evds.main_categories.iterrows():#Ana Kategorileri itere eden for döngüsü a.k.a main loop
 		sub_category_codes = evds.get_sub_categories(category[1].array[0]).get("DATAGROUP_CODE")#Group Code ile itere edebiliyoruz
-		sub_category_names = evds.get_sub_categories(category[1].array[0]).get("DATAGROUP_NAME")#Verittabanına anlamlı bir şekilde yazabilmek için alt kategorilerin kategorinin  adını alıyoruz
+		sub_category_names = evds.get_sub_categories(category[1].array[0]).get("DATAGROUP_NAME")#Veritabanına anlamlı bir şekilde yazabilmek için alt kategorilerin kategorinin  adını alıyoruz
 		for i, code in enumerate(sub_category_codes):#Alt Kategorileri itere ediyoruz
-			for seri in evds.get_series(code).values:#Serileri itere ediyoruz
-				seri_kodu = seri[0]
-				seri_adı = seri[1]
-				seri_baslangıc_tarihi = seri[2]
-				Ana_kategori = category[1].array[1]#Veritabanına yazmak için Ana kategori ismini alıyoruz
-				Alt_kategori = sub_category_names[i]#Aynı şekilde Alt Kategori isminide alıyoruz
-				try:
+			try:
+				for seri in evds.get_series(code).values:#Serileri itere ediyoruz
+					seri_kodu = seri[0]
+					seri_adı = seri[1]
+					seri_baslangıc_tarihi = seri[2]
+					Ana_kategori = category[1].array[1]#Veritabanına yazmak için Ana kategori ismini alıyoruz
+					Alt_kategori = sub_category_names[i]#Aynı şekilde Alt Kategori isminide alıyoruz
+
 					for j in range(1,9):#get_data() fonksiyonundaki formulas parametresine 1 den 8 e kadar tüm değerleri verip veritabanına kaydediyoruz
+						if collection.count_documents({"Ana_Kategori": Ana_kategori, "Alt_Kategori": Alt_kategori,"Seri_Adı": seri[1],"Veri Formülü": formula_explanation[j]}, limit=1) > 0:
+							print("Entry already exists in Database " + str(loop_counter))
+							loop_counter += 1
+							continue
 						seri_df = evds.get_data(series=[seri_kodu],startdate=seri_baslangıc_tarihi,enddate=datetime.date.today().strftime("%d-%m-%Y"),
 						                          formulas=str(j))
 						seri_json = seri_df.to_json(orient="index",index=True)
 						dict_to_insert = {"Ana_Kategori":Ana_kategori,"Alt_Kategori":Alt_kategori,"Seri_Adı":seri[1],
-						                  "Veri Formülü":formula_explanation[j],"Başlangıç Tarihi":seri_baslangıc_tarihi,"Bitiş Tarihi":datetime.date.today().strftime("%d-%m-%Y"),
-						                  "Veri":seri_json}#burdaki veri türü formulas parametresine verdiğimiz değere göre değişiyor
-						if collection.count_documents({"Ana_Kategori":Ana_kategori,"Alt_Kategori":Alt_kategori,"Seri_Adı":dict_to_insert["Seri_Adı"],"Veri Formülü":formula_explanation[j]},limit=2) <= 0:#entry daha önceden kayıtlımı diye bakıyoruz
-							x = collection.insert_one(dict_to_insert)
-						else:
-							pass
-						print(x)#Yazma işlemi başarıyla gerçekleştiyse konsola yazdırılıyor aksi halde hata veriyor
-				except Exception as e:
-					if str(e).__contains__("Read timed out."):
-							time.sleep(10)
+						                  "Veri Formülü":formula_explanation[j],"Başlangıç Tarihi":seri_baslangıc_tarihi,
+						                  "Bitiş Tarihi":datetime.date.today().strftime("%d-%m-%Y"),"Veri":seri_json}#burdaki veri türü formulas parametresine verdiğimiz değere göre değişiyor
+						x = collection.insert_one(dict_to_insert)
+						print("Recorded in Database "+str(loop_counter))
+						loop_counter += 1
+			except Exception as e:
+				if str(e).__contains__("Read timed out."):
+					time.sleep(10)
+					for seri in evds.get_series(code).values:  # Serileri itere ediyoruz
+						seri_kodu = seri[0]
+						seri_adı = seri[1]
+						seri_baslangıc_tarihi = seri[2]
+						Ana_kategori = category[1].array[1]  # Veritabanına yazmak için Ana kategori ismini alıyoruz
+						Alt_kategori = sub_category_names[i]  # Aynı şekilde Alt Kategori isminide alıyoruz
+
+						for j in range(1,9):  # get_data() fonksiyonundaki formulas parametresine 1 den 8 e kadar tüm değerleri verip veritabanına kaydediyoruz
+							if collection.count_documents(
+										{"Ana_Kategori": Ana_kategori, "Alt_Kategori": Alt_kategori,
+										 "Seri_Adı": seri[1], "Veri Formülü": formula_explanation[j]}, limit=1) > 0:
+								print("Entry already exists in Database " + str(loop_counter))
+								loop_counter += 1
+								continue
 							seri_df = evds.get_data(series=[seri_kodu], startdate=seri_baslangıc_tarihi,
-							                        enddate=datetime.date.today().strftime("%d-%m-%Y"),
-							                        formulas=str(j))
+								                        enddate=datetime.date.today().strftime("%d-%m-%Y"),
+								                        formulas=str(j))
 							seri_json = seri_df.to_json(orient="index", index=True)
 							dict_to_insert = {"Ana_Kategori": Ana_kategori, "Alt_Kategori": Alt_kategori,
-							                  "Seri_Adı": seri[1],
-							                  "Veri Formülü": formula_explanation[j],
-							                  "Başlangıç Tarihi": seri_baslangıc_tarihi,
-							                  "Bitiş Tarihi": datetime.date.today().strftime("%d-%m-%Y"),
-							                  "Veri": seri_json}  # burdaki veri türü formulas parametresine verdiğimiz değere göre değişiyor
-							if collection.count_documents(
-									{"Ana_Kategori":Ana_kategori,"Alt_Kategori":Alt_kategori,"Seri_Adı":dict_to_insert["Seri_Adı"],"Veri Formülü":formula_explanation[j]},limit=2) <= 0:
-								x = collection.insert_one(dict_to_insert)
-							else:
-								continue
-							print(x)
+								                  "Seri_Adı": seri[1],
+								                  "Veri Formülü": formula_explanation[j],
+								                  "Başlangıç Tarihi": seri_baslangıc_tarihi,
+								                  "Bitiş Tarihi": datetime.date.today().strftime("%d-%m-%Y"),
+								                  "Veri": seri_json}  # burdaki veri türü formulas parametresine verdiğimiz değere göre değişiyor
+							x = collection.insert_one(dict_to_insert)
+							print("Recorded in Database " + str(loop_counter))
+							loop_counter += 1
 							continue
 					else:
 						print(e)
