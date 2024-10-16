@@ -32,15 +32,12 @@ def read_data(filter) -> list:
 	return df_list
 
 
-def get_last_saved_entry(collection):
+def get_last_saved_entry(collection):#returns the last saved document as a dictionary
+	last_entry_dict = {}
 	last_entry = collection.find().sort({"_id":-1}).limit(1)
-	if last_entry:
-		return {
-			"Ana_Kategori": last_entry["Ana_Kategori"], "Alt_Kategori": last_entry["Alt_Kategori"], "Seri_Adı": last_entry["Seri_Adı"],
-			"Veri Formülü": last_entry["Veri Formülü"], "Başlangıç Tarihi": last_entry["Başlangıç Tarihi"],
-			"Bitiş Tarihi": last_entry["Bitiş Tarihi"]
-		}
-	return None
+	for document in last_entry:
+		last_entry_dict = document
+	return last_entry_dict
 
 def save_last(last_entry):
 	filepath = Path(Path.cwd(),"last_entry.json")
@@ -57,35 +54,35 @@ def write_to_db(evds) -> None:
 	db = client["Macroeconomics"]#çalışmak istediğin veritabanını seçiyorsun
 	collection = db["TCMB"]#burdaki collection SQL deki Table ile aynı şey, yani Table seçiyoruz
 
-	last_saved_entry = get_last_saved_entry(collection)#Get the last saved document from db
+	last_saved_entry = get_last_saved_entry(collection)#Get the last saved document from db as  a dictionary
 
-	start_saving = False if last_saved_entry else True #flag to know when to start saving
+	Ana_Kategori_Loop = True
+	Alt_Kategori_Loop = True
+	Seri_Loop = True
 
 	#Iterating over categories and series and saving them to database
 	try:
 		for category in evds.main_categories.iterrows():#Ana Kategorileri itere eden for döngüsü a.k.a main loop
+			if category[1].array[1] != last_saved_entry["Ana_Kategori"] and Ana_Kategori_Loop:#Ana Kategori, Alt Kategori ve Seri Adı son kayededilen document ile aynı değilse mevcut loopda bir sonraki iteration a geçiyoruz
+				continue
+			Ana_Kategori_Loop = False
 			Ana_kategori = category[1].array[1]  # Veritabanına yazmak için Ana kategori ismini alıyoruz
 			sub_category_codes = evds.get_sub_categories(category[1].array[0]).get("DATAGROUP_CODE")#Group Code ile itere edebiliyoruz
 			sub_category_names = evds.get_sub_categories(category[1].array[0]).get("DATAGROUP_NAME")#Veritabanına anlamlı bir şekilde yazabilmek için alt kategorilerin kategorinin  adını alıyoruz
 
 			for i, code in enumerate(sub_category_codes):#Alt Kategorileri itere ediyoruz
 				Alt_kategori = sub_category_names[i]  # Aynı şekilde Alt Kategori isminide alıyoruz
-
+				if Alt_kategori != last_saved_entry["Alt_Kategori"] and Alt_Kategori_Loop:
+					continue
+				Alt_Kategori_Loop = False
 				for seri in evds.get_series(code).values:#Serileri itere ediyoruz
 					seri_kodu = seri[0]
 					seri_adı = seri[1]
 					seri_baslangıc_tarihi = seri[2]
 
-					if last_saved_entry:
-						if not start_saving:
-							if (Ana_kategori == last_saved_entry['Ana_Kategori'] and
-									Alt_kategori == last_saved_entry['Alt_Kategori'] and
-									seri_adı == last_saved_entry['Seri_Adı']):
-								start_saving = True
-							else:
-								continue
-
-
+					if seri_adı != last_saved_entry["Seri_Adı"] and Seri_Loop:
+						continue
+					Seri_Loop = False
 					for j in range(1,9):#get_data() fonksiyonundaki formulas parametresine 1 den 8 e kadar tüm değerleri verip veritabanına kaydediyoruz
 						if collection.count_documents({"Ana_Kategori": Ana_kategori, "Alt_Kategori": Alt_kategori,"Seri_Adı": seri[1],"Veri Formülü": formula_explanation[j]}, limit=1) > 0:
 							print("Entry already exists in Database " + str(loop_counter))
@@ -100,6 +97,9 @@ def write_to_db(evds) -> None:
 						print("Recorded in Database "+str(loop_counter))
 						loop_counter += 1
 	except Exception as e:
+		if str(e).__contains__("Read timed out."):
+			time.sleep(10)
+			write_to_db(evds)
 		print(f"Error: {e}")
 		last_entry = get_last_saved_entry(collection)
 		save_last(last_entry)
